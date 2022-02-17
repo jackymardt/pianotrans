@@ -17,21 +17,28 @@
                   sha256 = "sha256-xT0F52iuSj5VOuIcLlAVKT5e+/1cEtSX8RBMtRnMprM=";
                 };
               });
-              python-rtmidi = prev.python-rtmidi.overrideAttrs (o: {
-                buildInputs = with super.darwin.apple_sdk.frameworks; [ CoreAudio CoreMIDI CoreServices ];
-              });
-              rtmidi-python = prev.rtmidi-python.overrideAttrs (o: {
-                buildInputs = with super.darwin.apple_sdk.frameworks; [ CoreAudio CoreMIDI CoreServices ];
-              });
-              soundfile = prev.soundfile.overrideAttrs (o: {
-                patches = [ ./soundfile.patch ];
-                prePatch = ''
-                  rm tests/test_pysoundfile.py
-                '';
-              });
-              torchlibrosa = self.python3.pkgs.callPackage ./torchlibrosa.nix {};
-              piano-transcription-inference = self.python3.pkgs.callPackage ./piano-transcription-inference.nix {};
-              pianotrans = self.python3.pkgs.callPackage ./pianotrans.nix { pytorch = self.python3.pkgs.pytorch-bin; };
+              mido = prev.mido.overrideAttrs (o:
+                if super.stdenv.isDarwin
+                then { propagatedBuildInputs = []; }
+                else { }
+              );
+              soundfile = prev.soundfile.overrideAttrs (o:
+                if (super.stdenv.system == "aarch64-darwin")
+                then {
+                  patches = [ ./soundfile.patch ];
+                  prePatch = ''
+                    rm tests/test_pysoundfile.py
+                  '';
+                }
+                else { }
+              );
+              torchlibrosa = self.python3.pkgs.callPackage ./torchlibrosa.nix { };
+              piano-transcription-inference = self.python3.pkgs.callPackage ./piano-transcription-inference.nix { };
+              pianotrans = self.python3.pkgs.callPackage ./pianotrans.nix (
+                if super.stdenv.isDarwin
+                then { pytorch = self.python3.pkgs.pytorch-bin; }
+                else { }
+              );
             };
           };
           python3Packages = python3.pkgs;
